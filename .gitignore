@@ -130,3 +130,8 @@ dmypy.json
 
 # Mac Specific Files
 .DS_Store
+
+# Test Files
+sample-files/dblp-ref-1m.json
+data/db/*
+!data/db/.gitkeep
