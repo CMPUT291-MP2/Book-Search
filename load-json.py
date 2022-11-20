@@ -1,5 +1,4 @@
-import sys
-import json
+import sys, os
 from pymongo import MongoClient
 
 class CreateStore:
@@ -15,6 +14,7 @@ class CreateStore:
             port (int): the port number
             host (str, optional): overrides the host location and port. Defaults to None.
         """
+        self.host = host
         self.json = json
         self.port = port
         self.client = MongoClient(host, port=self.port)
@@ -38,11 +38,8 @@ class CreateStore:
         # create the collection
         self.collection = self.db["dblp"]
         
-        # load in the data
-        with open(self.json, "r") as file:
-            for line in file:
-                data = json.loads(line)
-                self.collection.insert_one(data)
+        # import the data using mongoimport
+        os.system("mongoimport --db 291db --collection dblp --type=json --file " + self.json)
     
     def shutdown(self) -> None:
         """Closes the client
@@ -50,7 +47,7 @@ class CreateStore:
         self.client.close()
     
     def test(self) -> None:
-        """A simple testing function to execute commands when developing this program
+        """A simple testing function to execute commands when developing this program.
         Feel free to change this method whenever you need
         """
         print(self.client.list_database_names())
