@@ -32,7 +32,8 @@ class DocumentDatabase:
             print("1. Search for articles")
             print("2. Search for authors")
             print("3. List the venues")
-            print("4. Exit program")
+            print("4. Add an article")
+            print("5. Exit program")
             print("------------------------------")
 
             # take in the user's selection
@@ -46,6 +47,8 @@ class DocumentDatabase:
             elif selection == "3":
                 continue
             elif selection == "4":
+                continue
+            elif selection == "5":
                 self._shutdown()
                 break
             else:
