@@ -1,3 +1,4 @@
+import sys
 from pymongo import MongoClient, ASCENDING
 from pprint import pprint
 
@@ -205,5 +206,5 @@ class DocumentDatabase:
 
 
 if __name__ == "__main__":
-    db = DocumentDatabase(27017)
+    db = DocumentDatabase(int(sys.argv[1]))
     db.program_loop()
