@@ -40,49 +40,25 @@ class CreateStore:
         self.collection = self.db["dblp"]
         
         # import the data using mongoimport
-        os.system("mongoimport --db 291db --collection dblp --type=json --file " + self.json)
+        os.system("mongoimport --port " + str(self.port) + " --db 291db --collection dblp --type=json --file " + self.json)
         
         # add another field which is the year converted from type int -> string
         # this allows for much easier searching in the future
+        print("ADDING ANOTHER YEAR FIELD AS STRING")
         update = [{"$addFields" : {"convYear" : {"$toString" : "$year"}}}]
         self.collection.update_many({}, update)
 
-        # fill in any missing fields with an empty string
-        fill = [{"$fill" : {"output" : {
-            "authors" : {"value" : []},
-            "title" : {"value": ""},
-            "abstract" : {"value" :""},
-            "references" : {"value": []},
-            "venue" : {"value": ""},
-            "year" : {"value": 0}
-        }}}]
-        self.collection.update_many({}, fill)
-
         # add the index for faster searching in the future
-        self.collection.create_index([("title", pymongo.TEXT), ("authors", pymongo.TEXT), ("abstract", pymongo.TEXT), ("venue", pymongo.TEXT), ("convYear", pymongo.TEXT)], name="main_search_index", default_language="english")
+        print("INDEXING DATABASE")
+        self.collection.create_index([("authors", pymongo.TEXT), ("title", pymongo.TEXT), ("abstract", pymongo.TEXT), ("venue", pymongo.TEXT), ("convYear", pymongo.TEXT)], name="main_search_index", default_language="english")
 
     def shutdown(self) -> None:
         """Closes the client
         """
         self.client.close()
-    
-    def test(self) -> None:
-        """A simple testing function to execute commands when developing this program.
-        Feel free to change this method whenever you need
-        """
-        print(self.client.list_database_names())
-        print(self.db.list_collection_names())
-
-        # list the contents of the collection (could be very long!)
-        self.collection = self.db.get_collection("dblp")
-        cursor = self.collection.find({})
-        for doc in cursor:
-            print(doc)
-
 
 if __name__ == "__main__":
     create_store = CreateStore(sys.argv[1], int(sys.argv[2]))
     create_store.create_database()
     create_store.create_collection()
-    # create_store.test() # list all databases, collections, and their contents
     create_store.shutdown()
