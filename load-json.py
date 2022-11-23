@@ -1,4 +1,5 @@
 import sys, os
+import pymongo
 from pymongo import MongoClient
 
 class CreateStore:
@@ -40,7 +41,26 @@ class CreateStore:
         
         # import the data using mongoimport
         os.system("mongoimport --db 291db --collection dblp --type=json --file " + self.json)
-    
+        
+        # add another field which is the year converted from type int -> string
+        # this allows for much easier searching in the future
+        update = [{"$addFields" : {"convYear" : {"$toString" : "$year"}}}]
+        self.collection.update_many({}, update)
+
+        # fill in any missing fields with an empty string
+        fill = [{"$fill" : {"output" : {
+            "authors" : {"value" : []},
+            "title" : {"value": ""},
+            "abstract" : {"value" :""},
+            "references" : {"value": []},
+            "venue" : {"value": ""},
+            "year" : {"value": 0}
+        }}}]
+        self.collection.update_many({}, fill)
+
+        # add the index for faster searching in the future
+        self.collection.create_index([("title", pymongo.TEXT), ("authors", pymongo.TEXT), ("abstract", pymongo.TEXT), ("venue", pymongo.TEXT), ("convYear", pymongo.TEXT)], name="main_search_index", default_language="english")
+
     def shutdown(self) -> None:
         """Closes the client
         """
