@@ -55,67 +55,66 @@ class DocumentDatabase:
                 print("\nInvalid input, please try again...\n")
                 continue
     
-        def _add_articles(self):
+    def _add_articles(self):
         while True:
-            while True:
-                print("\n------------------------------")
-                print("Please select an option:")
-                print("1. Add an article")
-                print("2. Go back to main menu")
-                print("------------------------------")
-                selection = input(">: ")
-                if selection == '2':
-                    return
-                if selection == '1':
-                    break
-                else:
-                    print("\nInvalid input, please try again...\n")
-                    continue
-
-            print()
-            # add an article
             print("\n------------------------------")
-            while True:
-                print("Please enter a unique id:")
-                aid = input(">: ")
-                ret = self.collection.find_one({'id': aid})
-                # make sure it is unique
-                if ret is not None:
-                    print("This id is taken, try another one.")
-                else:
-                    break
-
-
-            print("Please enter a title: ")
-            title = input(">: ")
-
-            print("Please enter a list of authors (comma separated): ")
-            author_list = []
-            authors = input(">: ")
-            authors = authors.strip()
-            authors = authors.split(',')
-            for author in authors:
-                trimmed = author.strip()
-                author_list.append(trimmed)
-
-            while True:
-                print("Please enter a year: ")
-                year = input(">: ")
-                try:
-                    year = int(year)
-                except:
-                    print("Invalid input...")
-                    continue
-                if year > 0:
-                    break
-                else:
-                    print("Invalid input...")
-                    continue
-
-            data = dict(id=aid, title=title, authors=author_list, year=year, convYear=str(year), abstruct='', venue='', reference=[], n_citation=0)
-            self.collection.insert_one(data)
-            print("Success!")
+            print("Please select an option:")
+            print("1. Add an article")
+            print("2. Go back to main menu")
             print("------------------------------")
+            selection = input(">: ")
+            if selection == '2':
+                return
+            if selection == '1':
+                break
+            else:
+                print("\nInvalid input, please try again...\n")
+                continue
+
+        print()
+        # add an article
+        print("\n------------------------------")
+        while True:
+            print("Please enter a unique id:")
+            aid = input(">: ")
+            ret = self.collection.find_one({'id': aid})
+            # make sure it is unique
+            if ret is not None:
+                print("This id is taken, try another one.")
+            else:
+                break
+
+
+        print("Please enter a title: ")
+        title = input(">: ")
+
+        print("Please enter a list of authors (comma separated): ")
+        author_list = []
+        authors = input(">: ")
+        authors = authors.strip()
+        authors = authors.split(',')
+        for author in authors:
+            trimmed = author.strip()
+            author_list.append(trimmed)
+
+        while True:
+            print("Please enter a year: ")
+            year = input(">: ")
+            try:
+                year = int(year)
+            except:
+                print("Invalid input...")
+                continue
+            if year > 0:
+                break
+            else:
+                print("Invalid input...")
+                continue
+
+        data = dict(id=aid, title=title, authors=author_list, year=year, convYear=str(year), abstruct='', venue='', reference=[], n_citation=0)
+        self.collection.insert_one(data)
+        print("Success!")
+        print("------------------------------")
     
     def _articles_loop(self) -> None:
         """The main loop for searching for articles. Adds all required functionality for this part.
