@@ -276,19 +276,22 @@ class DocumentDatabase:
             keyword = search.strip().lower()
             # set up a dictionary, the keys are author contain the keyword
             # the value include the id and year of all his articles
-            authors = {}
+            authors = []
+            dict = {}
             # update the dictionary
             for i in self.collection.find({'authors': {'$regex': '.*' + keyword + '.*', '$options':'i'}}):
                 for j in i["authors"]:
                     if keyword in j.lower():
-                        if j not in authors:
-                            authors[j] = [[i["id"], i["year"]]]
+                        if j not in dict:
+                            authors.append(j)
+                            dict[j] = [[i["id"], i["year"]]]
                         else:
-                            authors[j] += [[i["id"], i["year"]]]
+                            dict[j] += [[i["id"], i["year"]]]
             # print the result
-            for author in authors:
-                print("Author name:            ", author)
-                print("Number of publications: ", len(authors[author]))
+            for i in range(len(authors)):
+                print("Index:                  ", i)
+                print("Author name:            ", dict[authors[i]])
+                print("Number of publications: ", len(dict[authors[i]]))
             if len(authors) == 0:
                 while True:
                     print("\n------------------------------")
@@ -319,16 +322,21 @@ class DocumentDatabase:
                     if selection == "1":
                         while True:
                             print("\n------------------------------------------------------------")
-                            print("Please enter the name of the author you selected")
+                            print("Please select an author and enter the index:")
                             print("------------------------------------------------------------")
                             # input the author selected by user
                             selected_author = input(">: ")
+                            try:
+                                index = int(selected_author)
+                            except:
+                                print("\nInvalid input, please try again...\n")
+                                continue
                             # check if the selected author in the authors contain the keyword
-                            if selected_author in authors:
+                            if index < len(authors):
                                 # sort by year
-                                authors[selected_author].sort(key = lambda x: x[1], reverse = True)
+                                dict[authors[index]].sort(key = lambda x: x[1], reverse = True)
                                 # print the result
-                                for i in authors[selected_author]:
+                                for i in dict[authors[index]]:
                                     query = self.collection.find_one({"id": i[0]})
                                     print("Authors :", ", ".join(query["authors"]))
                                     print(query["title"])
@@ -346,6 +354,8 @@ class DocumentDatabase:
                     else:
                         print("\nInvalid input, please try again...\n")
                     continue
+
+                    
     def _shutdown(self) -> None:
         """The exit function that closes the client. Should be called when exiting program
         """
