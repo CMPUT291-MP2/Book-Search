@@ -1,5 +1,5 @@
 import sys
-from pymongo import MongoClient, ASCENDING
+from pymongo import MongoClient, ASCENDING, DESCENDING
 from pprint import pprint
 
 class DocumentDatabase:
@@ -261,38 +261,62 @@ class DocumentDatabase:
         articles = list(cursor)
         
         return articles
+
+    def _get_author_articles(self, author:dict) -> list:
+        """A simple helper method to get a list of all articles that have
+        the given author
+
+        Args:
+            author (dict): the input author
+
+        Returns:
+            list: the list of articles
+        """
+        cursor = self.collection.aggregate([
+            {"$match" : {"authors" : author["_id"]}},
+            {"$project" : {"title" : "$title", "year" : "$year", "venue" : "$venue"}},
+            {"$sort" : {"year" : DESCENDING}}
+        ])
+
+        # add them to an array
+        return list(cursor)
        
         
     def _author_loop(self) -> None:
-        """The main loop for searching for authors. Adds all required functionality for this part.
+        """The main loop for search for authors. Adds all required functionality for this part.
         """
         while True:
             print("\n------------------------------------------------------------")
-            print("Please enter author search keyword (only one keyword):")
+            print("Please enter a single search keyword:")
             print("------------------------------------------------------------")
-            search = input(">: ")
+            search = input(">: ").strip()
 
-            # clean up and lowercase the input
-            keyword = search.strip().lower()
-            # set up a dictionary, the keys are author contain the keyword
-            # the value include the id and year of all his articles
-            authors = []
-            dict = {}
-            # update the dictionary
-            for i in self.collection.find({'authors': {'$regex': '.*' + keyword + '.*', '$options':'i'}}):
-                for j in i["authors"]:
-                    if keyword in j.lower():
-                        if j not in dict:
-                            authors.append(j)
-                            dict[j] = [[i["id"], i["year"]]]
-                        else:
-                            dict[j] += [[i["id"], i["year"]]]
-            # print the result
-            for i in range(len(authors)):
-                print("Index:                  ", i)
-                print("Author name:            ", dict[authors[i]])
-                print("Number of publications: ", len(dict[authors[i]]))
-            if len(authors) == 0:
+            cursor = self.collection.aggregate([
+                {"$match" : {"$text" : {"$search" : search}}},
+                {"$project" : {"authors" : "$authors"}},
+                {"$match" : {"authors" : {"$regex" : search, "$options" : "i"}}},
+                {"$unwind" : "$authors"},
+                {"$match" : {"authors" : {"$regex" : search, "$options" : "i"}}},
+                {"$project" : {"name" : "$authors"}},
+                {"$group" : {"_id" : "$name", "count" : {"$sum" : ASCENDING}}},
+                {"$sort" : {"count" : DESCENDING}}
+            ])
+
+            results = list(cursor)
+            num_results = len(results)
+
+            if results:
+                index = 0
+                print("\n============================================================")
+                for result in results:
+                    print()
+                    print("NAME:      " + result["_id"])
+                    print("NUM PUBS:  " + str(result["count"]))
+                    print("INDEX:     " + str(index))
+                    print()
+                    index += 1
+                print("============================================================")
+            else:
                 while True:
                     print("\n------------------------------")
                     print("Please select an option:")
@@ -310,49 +334,55 @@ class DocumentDatabase:
                         print("\nIncorrect input, please try again...\n")
                         continue
                 continue
-            else:
-                while True:
-                    print("\n------------------------------")
-                    print("Please select an option:")
-                    print("1. Select an author")
-                    print("2. Try another query")
-                    print("3. Go back to main menu")
-                    print("------------------------------")
-                    selection = input(">: ")
-                    if selection == "1":
-                        while True:
-                            print("\n------------------------------------------------------------")
-                            print("Please select an author and enter the index:")
-                            print("------------------------------------------------------------")
-                            # input the author selected by user
-                            selected_author = input(">: ")
-                            try:
-                                index = int(selected_author)
-                            except:
-                                print("\nInvalid input, please try again...\n")
-                                continue
-                            # check if the selected author in the authors contain the keyword
-                            if index < len(authors):
-                                # sort by year
-                                dict[authors[index]].sort(key = lambda x: x[1], reverse = True)
-                                # print the result
-                                for i in dict[authors[index]]:
-                                    query = self.collection.find_one({"id": i[0]})
-                                    print("Authors :", ", ".join(query["authors"]))
-                                    print(query["title"])
-                                    print(query["year"])
-                                    print(query["venue"])
-                                print("\n============================================================")
-                                break
-                            else:
-                                print("\nInvalid input, please try again...\n")
-                                continue
-                    elif selection == "2":
-                        break
-                    elif selection == "3":
-                        return
-                    else:
-                        print("\nInvalid input, please try again...\n")
+            
+            # start the selection loop
+            while True:
+                print("\n------------------------------")
+                print("Please select an option:")
+                print("1. Select an author")
+                print("2. Try another query")
+                print("3. Go back to main menu")
+                print("------------------------------")
+                selection = input(">: ")
+
+                if selection == "1":
+                    while True:
+                        # prompt the user to select a result from the displayed list
+                        print("\n------------------------------------------------------------")
+                        print("Please enter the index of the above results:")
+                        print("------------------------------------------------------------")
+                        index = input(">: ")
+
+                        # if the input is valid, it can be turned into an int, if it can't, then reprompt the user
+                        try:
+                            index = int(index)
+                        except:
+                            print("\nInvalid input, please try again...\n")
+                            continue
+                        
+                        # if their index is within the displayed authors, display the selected author's information
+                        if (0 <= index <= (num_results - 1)):
+                            author = results[index]
+                            author_results = self._get_author_articles(author)
+                            print("\n============================================================")
+                            for result in author_results:
+                                print()
+                                print("AUTHOR: " + author["_id"])
+                                print("TITLE: " + result["title"])
+                                print("YEAR: " + str(result["year"]))
+                                print("VENUE: " + result["venue"])
+                                print()
+                            print("============================================================")
+                            break
+                        else:
+                            print("\nIncorrect input, please try again...\n")
+
+                elif selection == "2":
+                    break
+                elif selection == "3":
+                    return
+                else:
+                    print("\nIncorrect input, please try again...\n")
                     continue
 
                     
