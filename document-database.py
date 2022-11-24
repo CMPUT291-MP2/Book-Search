@@ -43,7 +43,7 @@ class DocumentDatabase:
             if selection == "1":
                 self._articles_loop()
             elif selection == "2":
-                continue
+                self._author_loop()
             elif selection == "3":
                 continue
             elif selection == "4":
@@ -261,7 +261,91 @@ class DocumentDatabase:
         articles = list(cursor)
         
         return articles
-    
+       
+        
+    def _author_loop(self) -> None:
+        """The main loop for searching for authors. Adds all required functionality for this part.
+        """
+        while True:
+            print("\n------------------------------------------------------------")
+            print("Please enter author search keyword (only one keyword):")
+            print("------------------------------------------------------------")
+            search = input(">: ")
+
+            # clean up and lowercase the input
+            keyword = search.strip().lower()
+            # set up a dictionary, the keys are author contain the keyword
+            # the value include the id and year of all his articles
+            authors = {}
+            # update the dictionary
+            for i in self.collection.find({'authors': {'$regex': '.*' + keyword + '.*', '$options':'i'}}):
+                for j in i["authors"]:
+                    if keyword in j.lower():
+                        if j not in authors:
+                            authors[j] = [[i["id"], i["year"]]]
+                        else:
+                            authors[j] += [[i["id"], i["year"]]]
+            # print the result
+            for author in authors:
+                print("Author name:            ", author)
+                print("Number of publications: ", len(authors[author]))
+            if len(authors) == 0:
+                while True:
+                    print("\n------------------------------")
+                    print("Please select an option:")
+                    print("1. Try another query")
+                    print("2. Go back to main menu")
+                    print("------------------------------")
+                    selection = input(">: ")
+
+                    # find which action they selected
+                    if selection == "1":
+                        break
+                    elif selection == "2":
+                        return
+                    else:
+                        print("\nIncorrect input, please try again...\n")
+                        continue
+                continue
+            else:
+                while True:
+                    print("\n------------------------------")
+                    print("Please select an option:")
+                    print("1. Select an author")
+                    print("2. Try another query")
+                    print("3. Go back to main menu")
+                    print("------------------------------")
+                    selection = input(">: ")
+                    if selection == "1":
+                        while True:
+                            print("\n------------------------------------------------------------")
+                            print("Please enter the name of the author you selected")
+                            print("------------------------------------------------------------")
+                            # input the author selected by user
+                            selected_author = input(">: ")
+                            # check if the selected author in the authors contain the keyword
+                            if selected_author in authors:
+                                # sort by year
+                                authors[selected_author].sort(key = lambda x: x[1], reverse = True)
+                                # print the result
+                                for i in authors[selected_author]:
+                                    query = self.collection.find_one({"id": i[0]})
+                                    print("Authors :", ", ".join(query["authors"]))
+                                    print(query["title"])
+                                    print(query["year"])
+                                    print(query["venue"])
+                                print("\n============================================================")
+                                break
+                            else:
+                                print("\nInvalid input, please try again...\n")
+                                continue
+                    elif selection == "2":
+                        break
+                    elif selection == "3":
+                        return
+                    else:
+                        print("\nInvalid input, please try again...\n")
+                    continue
     def _shutdown(self) -> None:
         """The exit function that closes the client. Should be called when exiting program
         """
