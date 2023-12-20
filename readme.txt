@@ -1,4 +1,4 @@
-CMPUT 291 Mini-Project 2
+Mini-Project: Book Query
 
 Prerequisites:
     - Python 3.8+
